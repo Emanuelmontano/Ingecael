@@ -1,0 +1,57 @@
+Entidad
+tiene que es Cloneable
+@Override
+@Transient
+public HisMercado clone() throws CloneNotSupportedException {
+	return (HisMercado) super.clone();
+}
+/**
+ * @return the combinacionKey
+ */
+@Formula(value = "FECHA || '-' || M02CLI_ID_CLIENTE || '-'|| M02MER_ID_MERCADO")
+public String getCombinacionKey() {
+	return combinacionKey;
+}
+
+/**
+ * @param combinacionKey
+ *            the combinacionKey to set
+ */
+public void setCombinacionKey(String combinacionKey) {
+	this.combinacionKey = combinacionKey;
+}
+
+VC
+public boolean guardar(Cliente cliente) throws NegocioException {
+	List<HisMercado> listaEliminar = new ArrayList<>();
+	for (HisMercado item : getListaEdit()) {
+		HisMercado hisMercado = deleteEditHistorico(item);
+		if (hisMercado != null) {
+			listaEliminar.add(hisMercado);
+		}
+	}
+	if (parametroFacadeRemote.guardar(getListaAdd(), getListaEdit(), getListaDelete(), listaEliminar)) {
+		limpiar();
+		return true;
+	}
+	return false;
+}
+
+private HisMercado deleteEditHistorico(final HisMercado hisMercado) throws NegocioException {
+	try {
+		final HisMercado hisMercadoEliminar = hisMercado.clone();
+		final Map<Integer, Object> map = new HashMap<>();
+		map.put(3, hisMercado.getIdMercados());
+		map.put(2, hisMercado.getIdCliente());
+		map.put(1, hisMercado.getFecha());
+		if (!hisMercado.getCombinacionKey().equals(UtilidadComun.combinacionKeyMap(map))) {
+			String[] splitKey = hisMercado.getCombinacionKey().split("-");
+			hisMercadoEliminar.setFecha(UtilidadFechas.convertStringToDate("dd/MM/yy", splitKey[0]));
+			hisMercadoEliminar.setIdMercados(Long.parseLong(splitKey[2]));
+			return hisMercadoEliminar;
+		}
+		return null;
+	} catch (CloneNotSupportedException e) {
+		throw new NegocioException(e, e.getMessage());
+	}
+}
